@@ -1,0 +1,108 @@
+1st ► VOTE pod ► Observe what happens both in frontEnd & in Unix
+Observations: On deletion of Vote pod the current pod goes in terminating state while new vote pod is started. This is due to kind deployment which in turns using replica. Voting application continues without interruption and the result app preserves the votes. Below are commands.
+
+Before Deletion
+[root@ip-172-31-40-174 k8s-specifications]# kubectl get pods -o wide
+NAME                      READY   STATUS    RESTARTS   AGE     IP                NODE                                              NOMINATED NODE   READINESS GATES
+db-b54cd94f4-5k5ht        1/1     Running   0          99m     192.168.111.154   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+kubia2-fzc5f              1/1     Running   0          5h58m   192.168.111.153   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+kubia2-hgjx5              1/1     Running   0          5h58m   192.168.111.152   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+kubia2-xzzzv              1/1     Running   0          5h58m   192.168.111.151   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+redis-868d64d78-rssq4     1/1     Running   0          99m     192.168.111.155   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+result-5d57b59f4b-fvbb5   1/1     Running   0          99m     192.168.111.156   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+vote-94849dc97-lnm8v      1/1     Running   0          99m     192.168.111.157   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+worker-dd46d7584-fblwm    1/1     Running   0          99m     192.168.111.158   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+
+On Frontend - http://54.254.167.12:31000/
+Processed by container ID vote-94849dc97-lnm8v
+
+On Deletion in Unix 
+[root@ip-172-31-40-174 k8s-specifications]# kubectl delete po vote-94849dc97-lnm8v
+pod "vote-94849dc97-lnm8v" deleted
+[root@ip-172-31-40-174 k8s-specifications]# kubectl get pod -o wide
+NAME                      READY   STATUS    RESTARTS   AGE    IP                NODE                                              NOMINATED NODE   READINESS GATES
+db-b54cd94f4-5k5ht        1/1     Running   0          103m   192.168.111.154   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+kubia2-fzc5f              1/1     Running   0          6h3m   192.168.111.153   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+kubia2-hgjx5              1/1     Running   0          6h3m   192.168.111.152   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+kubia2-xzzzv              1/1     Running   0          6h3m   192.168.111.151   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+redis-868d64d78-rssq4     1/1     Running   0          103m   192.168.111.155   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+result-5d57b59f4b-fvbb5   1/1     Running   0          103m   192.168.111.156   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+vote-94849dc97-rf7hb      1/1     Running   0          11s    192.168.111.159   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+worker-dd46d7584-fblwm    1/1     Running   0          103m   192.168.111.158   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+
+On Frontend - http://54.254.167.12:31000/
+Processed by container ID vote-94849dc97-rf7hb
+
+[root@ip-172-31-40-174 k8s-specifications]# kubectl logs vote-94849dc97-rf7hb
+[2023-08-14 12:43:14 +0000] [1] [INFO] Starting gunicorn 20.1.0
+[2023-08-14 12:43:14 +0000] [1] [INFO] Listening at: http://0.0.0.0:80 (1)
+[2023-08-14 12:43:14 +0000] [1] [INFO] Using worker: sync
+[2023-08-14 12:43:14 +0000] [6] [INFO] Booting worker with pid: 6
+[2023-08-14 12:43:15 +0000] [7] [INFO] Booting worker with pid: 7
+[2023-08-14 12:43:15 +0000] [8] [INFO] Booting worker with pid: 8
+[2023-08-14 12:43:15 +0000] [9] [INFO] Booting worker with pid: 9
+[2023-08-14 12:44:07,469] INFO in app: Received vote for a
+[2023-08-14 12:44:07 +0000] [8] [INFO] Received vote for a
+192.168.7.192 - - [14/Aug/2023:12:44:07 +0000] "POST / HTTP/1.1" 200 1696 "http://54.254.167.12:31000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+192.168.7.192 - - [14/Aug/2023:12:44:07 +0000] "GET /static/stylesheets/style.css HTTP/1.1" 304 0 "http://54.254.167.12:31000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+[2023-08-14 12:44:11,050] INFO in app: Received vote for a
+[2023-08-14 12:44:11 +0000] [6] [INFO] Received vote for a
+192.168.7.192 - - [14/Aug/2023:12:44:11 +0000] "POST / HTTP/1.1" 200 1696 "http://54.254.167.12:31000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+192.168.7.192 - - [14/Aug/2023:12:44:11 +0000] "GET /static/stylesheets/style.css HTTP/1.1" 304 0 "http://54.254.167.12:31000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+[2023-08-14 12:44:13,799] INFO in app: Received vote for b
+[2023-08-14 12:44:13 +0000] [7] [INFO] Received vote for b
+192.168.7.192 - - [14/Aug/2023:12:44:13 +0000] "POST / HTTP/1.1" 200 1696 "http://54.254.167.12:31000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+192.168.7.192 - - [14/Aug/2023:12:44:13 +0000] "GET /static/stylesheets/style.css HTTP/1.1" 304 0 "http://54.254.167.12:31000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+[2023-08-14 12:44:17,187] INFO in app: Received vote for a
+[2023-08-14 12:44:17 +0000] [8] [INFO] Received vote for a
+192.168.7.192 - - [14/Aug/2023:12:44:17 +0000] "POST / HTTP/1.1" 200 1696 "http://54.254.167.12:31000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+192.168.7.192 - - [14/Aug/2023:12:44:17 +0000] "GET /static/stylesheets/style.css HTTP/1.1" 304 0 "http://54.254.167.12:31000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+
+2nd ► WORKER pod  ► Observe what happens both in frontEnd & in Unix
+Observation:  On deletion of Worker pod the current pod goes in terminating state while new Worker pod is started. This is due to kind deployment which in turns using replica. Voting application continues without interruption and the result app preserves the votes. Below are commands.
+
+[root@ip-172-31-40-174 k8s-specifications]# kubectl get pods -o wide
+NAME                      READY   STATUS    RESTARTS   AGE    IP                NODE                                              NOMINATED NODE   READINESS GATES
+db-b54cd94f4-5k5ht        1/1     Running   0          115m   192.168.111.154   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+redis-868d64d78-rssq4     1/1     Running   0          115m   192.168.111.155   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+result-5d57b59f4b-fvbb5   1/1     Running   0          115m   192.168.111.156   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+vote-94849dc97-rf7hb      1/1     Running   0          11m    192.168.111.159   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+worker-dd46d7584-fsk6d    1/1     Running   0          53s    192.168.111.160   ip-172-31-42-40.ap-southeast-1.compute.internal   <none>           <none>
+
+[root@ip-172-31-40-174 k8s-specifications]# kubectl logs worker-dd46d7584-fsk6d
+Connected to db
+Found redis at 10.111.48.218
+Connecting to redis
+Processing vote for 'a' by 'e3b910219f51164'
+Processing vote for 'a' by 'e3b910219f51164'
+
+3rd ► DB pod ► Observe what happens both in frontEnd & in Unix"
+Observation:  On deletion of db pod the current pod goes in terminating state while new db pod is started. The result app goes to initialised state with No Votes. The Vote data is lost as data stored in db pod is lost. The db pod is created with volume as emptyDir and this represents a temporary directory that shares a pod's lifetime. Below are commands
+
+db-deployment.yaml
+      volumes:
+      - name: db-data
+        emptyDir: {}
+		
+[root@ip-172-31-40-174 k8s-specifications]# kubectl get pods
+NAME                      READY   STATUS        RESTARTS   AGE
+db-b54cd94f4-5k5ht        1/1     Terminating   0          141m
+db-b54cd94f4-vg56j        1/1     Running       0          7s
+redis-868d64d78-rssq4     1/1     Running       0          141m
+result-5d57b59f4b-fvbb5   1/1     Running       0          141m
+vote-94849dc97-rf7hb      1/1     Running       0          37m
+worker-dd46d7584-fsk6d    1/1     Running       0          26m
+
+[root@ip-172-31-40-174 k8s-specifications]# kubectl logs worker-dd46d7584-fsk6d
+Connected to db
+Found redis at 10.111.48.218
+Connecting to redis
+Processing vote for 'a' by 'e3b910219f51164'
+Processing vote for 'b' by 'e3b910219f51164'
+Processing vote for 'a' by 'e3b910219f51164'
+
+Changed db-deployment.yaml to hostpath and now the voting data was preserved across db pod deletion.
+      volumes:
+      - name: db-data
+        hostPath:
+          path: /tmp/db-data
